@@ -1,0 +1,34 @@
+version: "3"
+
+services:
+  notebook:
+    image: ${PETCHARTS_NOTEBOOK_IMAGE}
+    build:
+      context: .
+      dockerfile: dockerfiles/dockerfile.notebook
+      args:
+        TRANSFORMERS_IMAGE: ${TRANSFORMERS_NVIDIA_IMAGE}
+
+  tokenizer:
+    image: ${PETCHARTS_TOKENIZER_IMAGE}
+    build:
+      context: .
+      dockerfile: dockerfiles/dockerfile.tokenizer
+      args:
+        TRANSFORMERS_IMAGE: ${TRANSFORMERS_PYTHON_IMAGE}
+
+  pretrained:
+    image: ${PETCHARTS_PRETRAINED_IMAGE}
+    build:
+      context: .
+      dockerfile: dockerfiles/dockerfile.pretrained
+      args:
+        TRANSFORMERS_IMAGE: ${TRANSFORMERS_NVIDIA_IMAGE}
+
+  downstream:
+    image: ${PETCHARTS_DOWNSTREAM_IMAGE}
+    build:
+      context: .
+      dockerfile: dockerfiles/dockerfile.downstream
+      args:
+        TRANSFORMERS_IMAGE: ${TRANSFORMERS_NVIDIA_IMAGE}

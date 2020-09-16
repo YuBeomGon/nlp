@@ -1,0 +1,11 @@
+#ARG TRANSFORMERS_IMAGE
+#FROM ${TRANSFORMERS_IMAGE}
+#FROM huggingface/transformers-pytorch-gpu:latest
+#FROM 056936070848.dkr.ecr.ap-northeast-2.amazonaws.com/petclassify:huggingface-pytorch-gpu
+#FROM 192.168.6.32:5000/petclassify:huggingface-pytorch-gpu
+FROM 192.168.6.32:5000/petclassify:huggingface-pytorch-gpu-from-source
+ENV PYTHONUNBUFFERED 1
+ENV SHELL /bin/bash
+WORKDIR /opt
+COPY *.py /opt/
+ENTRYPOINT ["python3", "train-reptile.py"]

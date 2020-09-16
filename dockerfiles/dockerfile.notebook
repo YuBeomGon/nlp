@@ -1,0 +1,14 @@
+#ARG TRANSFORMERS_IMAGE
+#FROM ${TRANSFORMERS_IMAGE}
+#FROM 056936070848.dkr.ecr.ap-northeast-2.amazonaws.com/petclassify:huggingface-pytorch-gpu
+FROM 192.168.6.32:5000/petclassify:huggingface-pytorch-gpu
+ARG JUPYTER_PASSWORD=kk3249
+COPY dockerfiles/jupyter-password.py /usr/local/bin/jupyter-password.py
+RUN pip3 install jupyterlab
+RUN jupyter notebook --generate-config
+RUN python3 /usr/local/bin/jupyter-password.py $JUPYTER_PASSWORD > /root/.jupyter/jupyter_notebook_config.json
+ENV PYTHONUNBUFFERED 1
+ENV SHELL /bin/bash
+WORKDIR /opt
+COPY *.py /opt/
+ENTRYPOINT ["jupyter-lab", "--allow-root", "--ip", "0.0.0.0"]
