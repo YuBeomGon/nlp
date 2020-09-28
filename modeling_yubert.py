@@ -56,6 +56,10 @@ from transformers import (
         BertEncoder
 ) 
 
+import sys
+sys.path.append('../')
+from activate import swish, ymish
+
 class YuBertSelfAttentionJupyter(BertSelfAttention) :
     def __init__(self, config):
         super().__init__(config)        
@@ -72,11 +76,13 @@ class YuBertSelfAttentionJupyter(BertSelfAttention) :
         self.query = nn.Linear(config.hidden_size, self.all_head_size)
         self.key = nn.Linear(config.hidden_size, self.all_head_size)
         self.value = nn.Linear(config.hidden_size, self.all_head_size)
-        
-#         self.key_pro = nn.Linear(config.seq_len, self.med_seq_len)
-#         self.value_pro = nn.Linear(config.seq_len, self.med_seq_len)        
 
-        self.dropout = nn.Dropout(config.attention_probs_dropout_prob)        
+        self.dropout = nn.Dropout(config.attention_probs_dropout_prob)    
+        
+#         self.ativate_ft = [nn.Softmax(dim=-1), nn.Tanh(), nn.ReLU(inplace=False), nn.Identity(), nn.ELU(), nn.LeakyReLU(0.1, inplace=False)] 
+        self.ativate_ft = [nn.Softmax(dim=-1), nn.SELU(inplace=False), nn.ELU(), nn.LeakyReLU(0.1, inplace=False)] 
+#         self.ativate_ft = [nn.Softmax(dim=-1), nn.Tanh(), nn.Softmax(dim=-1), nn.Tanh(), nn.Softmax(dim=-1), nn.Tanh()]  
+        
 
     def forward(
         self,
@@ -102,27 +108,42 @@ class YuBertSelfAttentionJupyter(BertSelfAttention) :
 
         query_layer = self.transpose_for_scores(mixed_query_layer)
         key_layer = self.transpose_for_scores(mixed_key_layer)
-        value_layer = self.transpose_for_scores(mixed_value_layer)        
+        value_layer = self.transpose_for_scores(mixed_value_layer)
 
         # Take the dot product between "query" and "key" to get the raw attention scores.
         attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
         attention_scores = attention_scores / math.sqrt(self.attention_head_size)
-#         attention_scores = torch.nn.ELU()(attention_scores)
+
         if attention_mask is not None:
             # Apply the attention mask is (precomputed for all layers in BertModel forward() function)
             attention_scores = attention_scores + attention_mask
+            
+#         print(attention_scores.size())
+        attention_a, attention_b, attention_c, attention_d, attention_e, attention_f = torch.split(attention_scores, 2, dim=1)
+#         print(attention_score_a.size())
+#         [nn.Softmax(dim=-1), nn.Tanh(), nn.ReLU(), nn.Identity(), nn.ELU(), nn.LeakyReLU(0.1)]  
+#         attention_scores[:,:,:] = self.ativate_ft[2](attention_scores[:,:,:])
+
+        attention_a = self.ativate_ft[0](attention_a)
+        attention_b = self.ativate_ft[1](attention_b)
+        attention_c = self.ativate_ft[2](attention_c)
+        attention_d = self.ativate_ft[3](attention_d)
+        attention_e = swish(attention_e)
+        attention_f = ymish(attention_f)
+        
+        attention_probs = torch.cat((attention_a, attention_b, attention_c, attention_d, attention_e, attention_f), dim=1)
+#         print(attention.size())
+#         attention_scores = nn.Softmax(dim=-1)(attention_scores)
+        
+#         attention_probs = (attention_scores)
+            
+#         for i in range(self.num_attention_heads) :
+#             attention_scores[:,i,] = self.ativate_ft[i%len(self.ativate_ft)](attention_scores[:,i,])
+#             attention_probs = attention_scores/torch.norm(attention_scores, dim=3, keepdim=True) + 1e-6
 
         # Normalize the attention scores to probabilities.
 #         attention_probs = nn.Softmax(dim=-1)(attention_scores)
-
-#         attention_probs = nn.Tanh()(attention_scores)
-#         print(attention_scores.size())
-        #Fast Transforemer, use Linear attention instead of softmax for reducing complexity of time
-#         attention_scores = max()
-#         print(attention_scores)
-#         attention_scores = torch.nn.ReLU()(attention_scores-0.1) - torch.nn.ReLU()(-(attention_scores+0.1))
-#         print(attention_scores)
-        attention_probs = attention_scores/torch.norm(attention_scores, dim=3, keepdim=True) + 1e-6
+#         attention_probs = attention_scores/torch.norm(attention_scores, dim=3, keepdim=True) + 1e-6
 
         # This is actually dropping out entire tokens to attend to, which might
         # seem a bit unusual, but is taken from the original Transformer paper.
@@ -189,7 +210,6 @@ class YuBertSelfAttention(BertSelfAttention):
         # Take the dot product between "query" and "key" to get the raw attention scores.
         attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
         attention_scores = attention_scores / math.sqrt(self.attention_head_size)
-        attention_scores = torch.nn.ELU()(attention_scores)
         if attention_mask is not None:
             # Apply the attention mask is (precomputed for all layers in BertModel forward() function)
             attention_scores = attention_scores + attention_mask
@@ -197,8 +217,7 @@ class YuBertSelfAttention(BertSelfAttention):
         # Normalize the attention scores to probabilities.
 #         attention_probs = nn.Softmax(dim=-1)(attention_scores)
 #         print(attention_scores.size())
-#         attention_scores = torch.nn.ReLU()(attention_scores-0.1) - torch.nn.ReLU()(-(attention_scores+0.1))
-        
+        attention_scores = torch.nn.ReLU()(attention_scores-0.1) - torch.nn.ReLU()(-(attention_scores+0.1))
         attention_probs = attention_scores/torch.norm(attention_scores, dim=3, keepdim=True) + 1e-6
 #         attention_probs = nn.Tanh()(attention_scores)
 

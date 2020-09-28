@@ -298,37 +298,22 @@ class YuBertNet(BertPreTrainedModel):
     config_class = RobertaConfig
     base_model_prefix = "roberta"
     
-#     def __init__(self, config):
-# #         super(YuBertNet, self).__init__(config)
-#         super().__init__(config)
-#         self.num_labels = config.num_labels
-#         self.roberta = YubertModel(config)
-#         self.down_fc =  nn.Linear(config.hidden_size, config.num_labels)
-
-#     def forward(self, sample):
-#         r = self.roberta(sample)
-#         r = r[0][:,0,:]   
-#         return self.down_fc(r) 
-
     def __init__(self, config):
+#         super(YuBertNet, self).__init__(config)
         super().__init__(config)
         self.num_labels = config.num_labels
         self.roberta = YubertModel(config)
+#         self.down_fc =  nn.Linear(config.hidden_size, config.num_labels)
         self.down_fc = nn.Sequential(
-            nn.Linear(config.hidden_size*3, config.hidden_size*3*2),
+            nn.Linear(config.hidden_size, config.hidden_size*4),
             nn.Tanh(),
 #             nn.ReLU(),
-            nn.Linear(config.hidden_size*3*2, config.num_labels)
-        )        
+            nn.Linear(config.hidden_size*4, config.num_labels)
+        )           
 
     def forward(self, sample):
         r = self.roberta(sample)
-        r = r[0][:,0:3,:] 
-#         r = r[0][:,1,:]
-        batch, length, dim = r.size()
-# #         print(r.size())
-        r = r.view(batch, -1)
-#         print(r.size())
+        r = r[0][:,0,:]   
         return self.down_fc(r) 
     
 class YubertForSequenceClassification(RobertaForSequenceClassification):
